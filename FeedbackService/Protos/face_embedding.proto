@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+option csharp_namespace = "Cognibrew.Events";
+
+message FaceEmbedding {
+  repeated int32 bbox = 1;
+  repeated float embedding = 2;
+  float det_score = 3;
+}

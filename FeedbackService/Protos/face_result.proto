@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option csharp_namespace = "Cognibrew.Events";
+
+message FaceResult {
+  repeated int32 bbox = 1;
+  string username = 2;
+  float score = 3;
+  repeated float embedding = 4; // the embedding is needed for downstream processing
+  string face_id = 5; // Unique identifier for the face, can be used for tracking across services
+}

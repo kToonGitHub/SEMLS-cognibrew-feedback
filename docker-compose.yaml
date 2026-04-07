@@ -1,0 +1,69 @@
+services:
+  feedback-service:
+    build:
+      context: . # ให้ Docker มองโฟลเดอร์นอกสุดเป็นจุดเริ่มต้น
+      dockerfile: FeedbackService/Dockerfile # ชี้เป้าไปที่ไฟล์ Dockerfile ในโฟลเดอร์ย่อย
+    container_name: feedback-service
+    restart: unless-stopped
+    ports:
+      - "5000:8080" # ผูกพอร์ต 5000 ของเครื่องโฮสต์ เข้ากับพอร์ต 8080 ของ .NET
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      
+      # ชี้ไปที่ MongoDB Container
+      - ConnectionStrings__MongoDb=mongodb://root:example@feedback-mongodb:27017
+      
+      # ชี้ไปที่ RabbitMQ Container
+      - RabbitMQ__HostName=cognibrew-rabbitmq
+      - RabbitMQ__UserName=guest
+      - RabbitMQ__Password=guest
+      
+      # ตั้งค่าระบบ
+      - DEVICE_ID=edge-001
+      - SYNC_INTERVAL_SECONDS=5
+      # เปลี่ยนเป็น URL ของ Gateway จริงๆ ที่อยู่ในเน็ตเวิร์ก cognibrew
+      - GATEWAY_API_URL=http://gateway-service:8000/api/v1/gateway/batch 
+    depends_on:
+      - feedback-mongodb
+    networks:
+      - cognibrew
+
+  feedback-mongodb:
+    image: mongo:latest
+    container_name: feedback-mongodb
+    restart: always
+    environment:
+      # ตั้งค่า Username/Password เบื้องต้น (ถ้าไม่ใส่จะเป็น No Auth)
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - cognibrew
+
+  # (Optional) ตัวช่วยจัดการ Database ผ่านหน้าเว็บ เข้าใช้งานที่ http://localhost:8081
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=example
+      - ME_CONFIG_MONGODB_URL=mongodb://root:example@feedback-mongodb:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=pass
+    depends_on:
+      - feedback-mongodb
+    networks:
+      - cognibrew
+
+volumes:
+  mongo_data:
+
+networks:
+  cognibrew:
+    external: true
