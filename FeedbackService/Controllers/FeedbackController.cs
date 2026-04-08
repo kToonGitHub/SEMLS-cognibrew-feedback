@@ -1,4 +1,5 @@
 ﻿using FeedbackService.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 
@@ -16,6 +17,7 @@ public class FeedbackController : ControllerBase
     }
 
     // PUT: api/v1/feedback/{deviceId}/{date}/{vectorId}
+    [Authorize(Roles ="Admin,Owner,User")]
     [HttpPut("{deviceId}/{date}/{vectorId}")]
     public async Task<IActionResult> UpdateFeedback(string deviceId, string date, string vectorId, [FromBody] FeedbackUpdateRequest request)
     {
