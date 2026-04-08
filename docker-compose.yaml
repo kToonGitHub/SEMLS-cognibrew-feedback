@@ -21,6 +21,9 @@ services:
       # ตั้งค่าระบบ
       - DEVICE_ID=edge-001
       - SYNC_INTERVAL_SECONDS=5
+      - RabbitMQ__FaceResultQueue=cognibrew.inference.face_embeded.feedback_service
+      - RabbitMQ__FaceResultExchange=cognibrew.inference
+      - RabbitMQ__FaceResultRoutingKey=face.recognized
       # เปลี่ยนเป็น URL ของ Gateway จริงๆ ที่อยู่ในเน็ตเวิร์ก cognibrew
       - GATEWAY_API_URL=http://gateway-service:8000/api/v1/gateway/batch 
     depends_on:

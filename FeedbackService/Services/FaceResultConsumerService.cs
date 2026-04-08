@@ -41,9 +41,54 @@ public class FaceResultConsumerService : BackgroundService
             _connection = await factory.CreateConnectionAsync(stoppingToken);
             _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-            string queueName = _config["RabbitMQ:FaceResultQueue"] ?? "cognibrew.vectordb.face_recognized";
+            string queueName = "cognibrew.inference.face_embeded.feedback_service";
+            if (!string.IsNullOrEmpty(_config["RabbitMQ:FaceResultQueue"]))
+            {
+                queueName = _config["RabbitMQ:FaceResultQueue"]!;
+                _logger.LogInformation($"[*] Using queue name from config: {queueName}");
+            }
+            else
+            {
+                _logger.LogInformation($"[*] Using default queue name: {queueName}");
+            }
 
-            await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false, cancellationToken: stoppingToken);
+            await _channel.QueueDeclareAsync(
+                queue: queueName, 
+                durable: true, 
+                exclusive: false, 
+                autoDelete: false, 
+                cancellationToken: stoppingToken
+            );
+            _logger.LogInformation($"[*] Connected to RabbitMQ and declared queue: {queueName}");
+
+            string exchangeName = "cognibrew.inference";
+            if (!string.IsNullOrEmpty(_config["RabbitMQ:FaceResultExchange"]))
+            {
+                exchangeName = _config["RabbitMQ:FaceResultExchange"]!;
+                _logger.LogInformation($"[*] Using exchange from config: {exchangeName}");
+            }
+            else
+            {
+                _logger.LogInformation($"[*] Using default exchange: {exchangeName}");
+            }
+            string routingKey = "face.recognized";
+            if (!string.IsNullOrEmpty(_config["RabbitMQ:FaceResultRoutingKey"]))
+            {
+                routingKey = _config["RabbitMQ:FaceResultRoutingKey"]!;
+                _logger.LogInformation($"[*] Using routing key from config: {routingKey}");
+            }
+            else
+            {
+                _logger.LogInformation($"[*] Using default routing key: {routingKey}");
+            }
+
+            await _channel.QueueBindAsync(
+                queue: queueName,
+                exchange: exchangeName,
+                routingKey: routingKey,
+                cancellationToken: stoppingToken
+            );
+            _logger.LogInformation($"[*] Bound queue '{queueName}' to exchange '{exchangeName}' with routing key '{routingKey}'");
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
             consumer.ReceivedAsync += async (model, ea) =>
