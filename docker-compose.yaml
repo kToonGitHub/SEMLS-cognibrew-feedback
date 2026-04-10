@@ -20,7 +20,7 @@ services:
       
       # ตั้งค่าระบบ
       - DEVICE_ID=edge-001
-      - SYNC_INTERVAL_SECONDS=5
+      - SYNC_INTERVAL_MINUTES=1
       - RabbitMQ__FaceResultQueue=cognibrew.inference.face_embeded.feedback_service
       - RabbitMQ__FaceResultExchange=cognibrew.inference
       - RabbitMQ__FaceResultRoutingKey=face.recognized
@@ -42,7 +42,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db
+      - feedback_mongo_data:/data/db
     networks:
       - cognibrew
 
@@ -65,7 +65,7 @@ services:
       - cognibrew
 
 volumes:
-  mongo_data:
+  feedback_mongo_data:
 
 networks:
   cognibrew:

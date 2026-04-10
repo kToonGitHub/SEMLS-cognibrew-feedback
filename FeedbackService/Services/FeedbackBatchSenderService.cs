@@ -49,11 +49,13 @@ namespace FeedbackService.Services
                     v => v.IsSynced == false && v.IsCorrect != null);
 
                 var pendingDocs = await _collection.Find(filter).ToListAsync(stoppingToken);
+                _logger.LogInformation($"Found {pendingDocs.Count} documents with pending feedback to sync.");
 
                 var httpClient = _httpClientFactory.CreateClient();
 
                 foreach (var doc in pendingDocs)
                 {
+                    _logger.LogInformation($"Processing device {doc.DeviceId} for date {doc.Date} with {doc.Vectors.Count} total vectors.");
                     // กรองเอาเฉพาะข้อมูลข้างในที่พร้อมส่งจริงๆ
                     var vectorsToSend = doc.Vectors
                         .Where(v => !v.IsSynced && v.IsCorrect.HasValue)
@@ -77,33 +79,40 @@ namespace FeedbackService.Services
                     var jsonPayload = JsonSerializer.Serialize(payload);
                     var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
-                    // 2. ยิง API ส่ง Batch ไปที่ Gateway
-                    var response = await httpClient.PostAsync(gatewayUrl, content, stoppingToken);
-
-                    if (response.IsSuccessStatusCode)
+                    try
                     {
-                        // 3. ท่าไม้ตาย MongoDB: อัปเดต Array เฉพาะ Element ที่เพิ่งส่งไปให้ IsSynced = true
-                        var vectorIdsToUpdate = vectorsToSend.Select(v => v.VectorId).ToList();
+                        // 2. ยิง API ส่ง Batch ไปที่ Gateway
+                        var response = await httpClient.PostAsync(gatewayUrl, content, stoppingToken);
 
-                        var updateFilter = Builders<DailyFeedbackDocument>.Filter.Eq(x => x.Id, doc.Id);
-                        var updateAction = Builders<DailyFeedbackDocument>.Update.Set("vectors.$[elem].is_synced", true);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            // 3. ท่าไม้ตาย MongoDB: อัปเดต Array เฉพาะ Element ที่เพิ่งส่งไปให้ IsSynced = true
+                            var vectorIdsToUpdate = vectorsToSend.Select(v => v.VectorId).ToList();
 
-                        // ใช้ ArrayFilters เพื่อจับคู่หาตัวที่ต้องอัปเดต
-                        var arrayFilters = new List<ArrayFilterDefinition>
+                            var updateFilter = Builders<DailyFeedbackDocument>.Filter.Eq(x => x.Id, doc.Id);
+                            var updateAction = Builders<DailyFeedbackDocument>.Update.Set("vectors.$[elem].is_synced", true);
+
+                            // ใช้ ArrayFilters เพื่อจับคู่หาตัวที่ต้องอัปเดต
+                            var arrayFilters = new List<ArrayFilterDefinition>
                         {
                             new BsonDocumentArrayFilterDefinition<BsonDocument>(
                                 new BsonDocument("elem.vector_id", new BsonDocument("$in", new BsonArray(vectorIdsToUpdate))))
                         };
 
-                        var updateOptions = new UpdateOptions { ArrayFilters = arrayFilters };
+                            var updateOptions = new UpdateOptions { ArrayFilters = arrayFilters };
 
-                        await _collection.UpdateOneAsync(updateFilter, updateAction, updateOptions, stoppingToken);
+                            await _collection.UpdateOneAsync(updateFilter, updateAction, updateOptions, stoppingToken);
 
-                        _logger.LogInformation($"Successfully synced {vectorsToSend.Count} records for device {doc.DeviceId} on {doc.Date}.");
+                            _logger.LogInformation($"Successfully synced {vectorsToSend.Count} records for device {doc.DeviceId} on {doc.Date}.");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"Failed to sync for {doc.DeviceId}. Status: {response.StatusCode}");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        _logger.LogWarning($"Failed to sync for {doc.DeviceId}. Status: {response.StatusCode}");
+                        _logger.LogError(ex, $"Error occurred while syncing feedback for device {doc.DeviceId} on {doc.Date}.");
                     }
                 }
             }

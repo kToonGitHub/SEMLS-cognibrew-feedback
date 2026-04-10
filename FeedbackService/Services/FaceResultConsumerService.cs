@@ -159,7 +159,16 @@ public class FaceResultConsumerService : BackgroundService
 
         var options = new UpdateOptions { IsUpsert = true };
 
-        await _collection.UpdateOneAsync(filter, update, options);
+        var updateResult = await _collection.UpdateOneAsync(filter, update, options);
+        try
+        {
+            _logger.LogInformation($"MongoDB update result: MatchedCount={updateResult.MatchedCount}, ModifiedCount={updateResult.ModifiedCount}, UpsertedId={updateResult.UpsertedId}");
+            _logger.LogInformation($"Saved face result to MongoDB for device: {deviceId} on date: {currentDate}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error logging MongoDB update result");
+        }
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
