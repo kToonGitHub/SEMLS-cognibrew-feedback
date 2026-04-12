@@ -16,18 +16,21 @@ public class FeedbackController : ControllerBase
         _collection = collection;
     }
 
-    // PUT: api/v1/feedback/{deviceId}/{date}/{vectorId}
+    // PUT: api/v1/feedback/{vectorId}
     [Authorize(Roles ="Admin,Owner,User")]
-    [HttpPut("{deviceId}/{date}/{vectorId}")]
-    public async Task<IActionResult> UpdateFeedback(string deviceId, string date, string vectorId, [FromBody] FeedbackUpdateRequest request)
+    [HttpPut("{vectorId}")]
+    public async Task<IActionResult> UpdateFeedback(string vectorId, [FromBody] FeedbackUpdateRequest request)
     {
         // ค้นหา Document ของเครื่องและวันนั้นๆ และหา Vector ที่ตรงกับ vectorId
-        var filter = Builders<DailyFeedbackDocument>.Filter.Eq(x => x.DeviceId, deviceId) &
-                     Builders<DailyFeedbackDocument>.Filter.Eq(x => x.Date, date) &
-                     Builders<DailyFeedbackDocument>.Filter.ElemMatch(x => x.Vectors, v => v.VectorId == vectorId);
+        //var filter = Builders<DailyFeedbackDocument>.Filter.Eq(x => x.DeviceId, deviceId) &
+        //             Builders<DailyFeedbackDocument>.Filter.Eq(x => x.Date, date) &
+        //             Builders<DailyFeedbackDocument>.Filter.ElemMatch(x => x.Vectors, v => v.VectorId == vectorId);
+        var filter = Builders<DailyFeedbackDocument>.Filter.ElemMatch(x => x.Vectors, v => v.VectorId == vectorId);
 
         // อัปเดตเฉพาะฟิลด์ is_correct ใน Array
-        var update = Builders<DailyFeedbackDocument>.Update.Set("vectors.$.is_correct", request.IsCorrect);
+        var update = Builders<DailyFeedbackDocument>.Update
+            .Set("vectors.$.is_correct", request.feedback.ToLower().StartsWith("true"))
+            .Set("vectors.$.feedback", request.feedback);
 
         var result = await _collection.UpdateOneAsync(filter, update);
 
@@ -42,4 +45,4 @@ public class FeedbackController : ControllerBase
 }
 
 // ย้าย DTO มาไว้ในไฟล์เดียวกัน
-public record FeedbackUpdateRequest(bool IsCorrect);
+public record FeedbackUpdateRequest(string feedback);

@@ -6,7 +6,8 @@ services:
     container_name: feedback-service
     restart: unless-stopped
     ports:
-      - "5000:8080" # ผูกพอร์ต 5000 ของเครื่องโฮสต์ เข้ากับพอร์ต 8080 ของ .NET
+      - "5002:8080" # ผูกพอร์ต 5000 ของเครื่องโฮสต์ เข้ากับพอร์ต 8080 ของ .NET
+      - "5003:8081"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       
@@ -40,7 +41,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=example
     ports:
-      - "27017:27017"
+      - "28018:27017"
     volumes:
       - feedback_mongo_data:/data/db
     networks:
@@ -52,7 +53,7 @@ services:
     container_name: mongo-express
     restart: always
     ports:
-      - "8081:8081"
+      - "8018:8081"
     environment:
       - ME_CONFIG_MONGODB_ADMINUSERNAME=root
       - ME_CONFIG_MONGODB_ADMINPASSWORD=example

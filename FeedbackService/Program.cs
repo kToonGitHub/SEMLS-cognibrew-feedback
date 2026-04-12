@@ -66,7 +66,7 @@ namespace FeedbackService
 
         private static void SetSwaggerOptions(SwaggerGenOptions options)
         {
-            options.SwaggerDoc("v1", new() { Title = "ReservationService API", Version = "v1" });
+            options.SwaggerDoc("v1", new() { Title = "FeedbackService API", Version = "v1" });
             options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
             {
                 Name = "Authorization",
