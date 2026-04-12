@@ -35,6 +35,9 @@
         [BsonElement("is_correct")]
         public bool? IsCorrect { get; set; }
 
+        [BsonElement("feedback")]
+        public string Feedback { get; set; } = string.Empty;
+
         // ตัวแปรสำคัญ: เอาไว้เช็คว่า Background process ส่งข้อมูลนี้ไปหรือยัง
         [BsonElement("is_synced")]
         public bool IsSynced { get; set; } = false;
