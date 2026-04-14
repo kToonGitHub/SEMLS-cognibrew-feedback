@@ -27,7 +27,7 @@ services:
       - RabbitMQ__FaceResultExchange=cognibrew.inference
       - RabbitMQ__FaceResultRoutingKey=face.recognized
       # เปลี่ยนเป็น URL ของ Gateway จริงๆ ที่อยู่ในเน็ตเวิร์ก cognibrew
-      - GATEWAY_API_URL=http://gateway-service:8000/api/v1/gateway/batch 
+      - GATEWAY_API_URL=https://edge-gateway.melierx.com/api/v1/gateway/batch
     depends_on:
       - feedback-mongodb
     networks:
